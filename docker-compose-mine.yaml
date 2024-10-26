@@ -1,0 +1,78 @@
+version: '3.8'
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:14-alpine}
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_USER=skyvern
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-skyvern}
+      - POSTGRES_DB=skyvern
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skyvern"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  skyvern:
+    image: ${SKYVERN_IMAGE:-public.ecr.aws/skyvern/skyvern:latest}
+    restart: on-failure
+    ports:
+      - ":8000"
+    volumes:
+      - artifacts:/data/artifacts
+      - videos:/data/videos
+      - har:/data/har
+      - streamlit:/app/.streamlit
+    environment:
+      - DATABASE_STRING=postgresql+psycopg://skyvern:${DB_PASSWORD:-skyvern}@postgres:5432/skyvern
+      - BROWSER_TYPE=chromium-headful
+      - ENABLE_OPENAI=${ENABLE_OPENAI:-false}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ENABLE_ANTHROPIC=${ENABLE_ANTHROPIC:-false}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - ENABLE_AZURE=${ENABLE_AZURE:-false}
+      - AZURE_DEPLOYMENT=${AZURE_DEPLOYMENT:-}
+      - AZURE_API_KEY=${AZURE_API_KEY:-}
+      - AZURE_API_BASE=${AZURE_API_BASE:-}
+      - AZURE_API_VERSION=${AZURE_API_VERSION:-}
+      - LLM_KEY=${LLM_KEY:-}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - MAX_STEPS_PER_RUN=${MAX_STEPS_PER_RUN:-50}
+      - ANALYTICS_ID=${ANALYTICS_ID:-anonymous}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/.streamlit/secrets.toml"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  skyvern-ui:
+    image: ${SKYVERN_UI_IMAGE:-public.ecr.aws/skyvern/skyvern-ui:latest}
+    restart: on-failure
+    ports:
+      - ":8080"
+      - ":9090"
+    volumes:
+      - artifacts:/data/artifacts
+      - videos:/data/videos
+      - har:/data/har
+      - streamlit:/app/.streamlit
+    environment:
+      - VITE_WSS_BASE_URL=${VITE_WSS_BASE_URL:-ws://localhost:8000/api/v1}
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+      - VITE_SKYVERN_API_KEY=${SKYVERN_API_KEY:-}
+    depends_on:
+      skyvern:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  artifacts:
+  videos:
+  har:
+  streamlit:
