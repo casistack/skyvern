@@ -10,11 +10,11 @@ services:
       - POSTGRES_USER=skyvern
       - POSTGRES_PASSWORD=${DB_PASSWORD:-skyvern}
       - POSTGRES_DB=skyvern
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U skyvern"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    #healthcheck:
+      #test: ["CMD-SHELL", "pg_isready -U skyvern"]
+      #interval: 5s
+      #timeout: 5s
+      #retries: 5
 
   skyvern:
     image: ${SKYVERN_IMAGE:-public.ecr.aws/skyvern/skyvern:latest}
@@ -45,11 +45,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "test", "-f", "/app/.streamlit/secrets.toml"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    #healthcheck:
+      #test: ["CMD", "test", "-f", "/app/.streamlit/secrets.toml"]
+      #interval: 5s
+      #timeout: 5s
+      #retries: 5
 
   skyvern-ui:
     image: ${SKYVERN_UI_IMAGE:-public.ecr.aws/skyvern/skyvern-ui:latest}
@@ -66,9 +66,9 @@ services:
       - VITE_WSS_BASE_URL=${VITE_WSS_BASE_URL:-ws://localhost:8000/api/v1}
       - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
       - VITE_SKYVERN_API_KEY=${SKYVERN_API_KEY:-}
-    depends_on:
-      skyvern:
-        condition: service_healthy
+    #depends_on:
+      #skyvern:
+        #condition: service_healthy
 
 volumes:
   postgres_data:
